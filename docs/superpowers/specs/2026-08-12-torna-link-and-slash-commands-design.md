@@ -3,7 +3,7 @@
 **日期：** 2026-08-12  
 **状态：** 已确认并实现（真实拉取待配置 TORNA_TOKEN）  
 **基线：** `docs/superpowers/specs/2026-08-12-extract-page-apis-design.md`  
-**目标链接：** `http://192.168.2.220:7700/#/project/doc/RqXBwzEl`
+**目标链接形态：** `http(s)://{host}/#/project/doc/{projectId}`
 
 ## 1. 目标
 
@@ -95,8 +95,8 @@ api_doc_source ──┬── 本地 OpenAPI 文件 ──► openapi.load_open
 ```json
 {
   "ok": true,
-  "origin": "http://192.168.2.220:7700",
-  "project_id": "RqXBwzEl",
+  "origin": "http://torna.example.com",
+  "project_id": "your-project-id",
   "project_name": "...",
   "api_count": 123,
   "sample_paths": ["GET /foo", "POST /bar"],
@@ -167,7 +167,7 @@ Cursor MCP `env` 映射 `${env:TORNA_TOKEN}`。仓库 `.env` 仍不自动加载�
 - 单元：URL 解析、projects 展平匹配、树展平、详情→OpenAPI、登录失败。
 - 工作流：mock 匹配 + 注入假 Torna OpenAPI；连接测试工具成功/失败。
 - 服务器：三工具注册与 schema（含 `test_torna_connection`）。
-- **真实链路（实现后必做）：** 在已配置 `TORNA_TOKEN` 时，对 `http://192.168.2.220:7700/#/project/doc/RqXBwzEl` 跑 `test_torna_connection`，断言 `ok=true` 且 `api_count > 0`。无 token 时记录为阻塞并给出配置步骤，不以假成功收场。
+- **真实链路（实现后必做）：** 在已配置 `TORNA_TOKEN` 时，对实际 Torna 项目链接跑 `test_torna_connection`，断言 `ok=true` 且 `api_count > 0`。无 token 时记录为阻塞并给出配置步骤，不以假成功收场。文档示例请使用占位符，勿写入内网地址或真实项目 ID。
 
 ## 11. 与基线规格关系
 

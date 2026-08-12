@@ -48,8 +48,8 @@ Key behaviors:
 
 ```python
 assert parse_torna_doc_url(
-    "http://192.168.2.220:7700/#/project/doc/RqXBwzEl"
-) == {"origin": "http://192.168.2.220:7700", "project_id": "RqXBwzEl", "kind": "project"}
+    "http://torna.example.com:7700/#/project/doc/project-erp"
+) == {"origin": "http://torna.example.com:7700", "project_id": "project-erp", "kind": "project"}
 
 # #/view/x → kind "doc" (not usable as full project source)
 ```
@@ -104,7 +104,7 @@ assert parse_torna_doc_url(
 - Or run via Python -c / pytest mark
 
 - [ ] If `TORNA_TOKEN` unset: run script/tool and assert clear failure message; document that live success is blocked pending token.
-- [ ] If `TORNA_TOKEN` set: call `test_torna_connection("http://192.168.2.220:7700/#/project/doc/RqXBwzEl")`, require `ok is True` and `api_count > 0`; print project_name and sample_paths.
+- [ ] If `TORNA_TOKEN` set: call `test_torna_connection` with the real Torna project URL (do not hardcode internal hosts in docs), require `ok is True` and `api_count > 0`; print project_name and sample_paths.
 - [ ] Do not fake success.
 
 ## Self-review

@@ -69,10 +69,10 @@ def _project_transport(
 
 def test_parse_torna_project_url() -> None:
     assert parse_torna_doc_url(
-        "http://192.168.2.220:7700/#/project/doc/RqXBwzEl"
+        "http://torna.example.com:7700/#/project/doc/project-erp"
     ) == {
-        "origin": "http://192.168.2.220:7700",
-        "project_id": "RqXBwzEl",
+        "origin": "http://torna.example.com:7700",
+        "project_id": "project-erp",
         "kind": "project",
     }
 

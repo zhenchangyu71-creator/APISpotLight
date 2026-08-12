@@ -9,7 +9,7 @@ APISpotLight 是一个 FastMCP stdio 服务。它根据 mock 文件和可选的�
 1. **本地完整 OpenAPI 3.x** JSON/YAML 文件（从 Torna 手工导出亦可）。
 2. **Torna 项目文档链接**，形如：
 
-   `http://192.168.2.220:7700/#/project/doc/RqXBwzEl`
+   `http://torna.example.com/#/project/doc/{projectId}`
 
    需配置环境变量 `TORNA_TOKEN`。服务会鉴权拉取项目接口树并转为 OpenAPI；阶段 1 会把缓存写到 `output_dir/full-openapi.from-torna.json`，阶段 2 应优先复用该缓存，避免二次全量拉取。
 
@@ -105,7 +105,7 @@ python -m pip install -e ".[dev]"
 {
   "mock_paths": ["/project/mocks", "/project/mock/users.json"],
   "screenshot_paths": ["/project/screens/users.png"],
-  "api_doc_source": "http://192.168.2.220:7700/#/project/doc/RqXBwzEl",
+  "api_doc_source": "http://torna.example.com/#/project/doc/{projectId}",
   "output_dir": "/project/api-candidates/users",
   "vision_enabled": true
 }
@@ -202,7 +202,7 @@ cp .env.example .env
 连接自检示例（配置好 `TORNA_TOKEN` 后）：
 
 ```text
-test_torna_connection(doc_url="http://192.168.2.220:7700/#/project/doc/RqXBwzEl")
+test_torna_connection(doc_url="http://torna.example.com/#/project/doc/{projectId}")
 ```
 
 成功时返回 `ok=true`、`project_name`、`api_count`、`sample_paths` 等（不含 token）。
