@@ -103,16 +103,15 @@ def assert_local_nonempty_path(value: str, *, label: str) -> Path:
 
 def _candidates_markdown(candidates: list[dict]) -> str:
     show_confidence = any("confidence" in item for item in candidates)
+    show_fields = any(item.get("hit_fields") for item in candidates)
+    cols = ["Selected", "Method", "Path", "Match", "Source"]
     if show_confidence:
-        header = (
-            "| Selected | Method | Path | Match | Source | Confidence | Summary |"
-        )
-        divider = (
-            "|----------|--------|------|-------|--------|------------|---------|"
-        )
-    else:
-        header = "| Selected | Method | Path | Match | Source | Summary |"
-        divider = "|----------|--------|------|-------|--------|---------|"
+        cols.append("Confidence")
+    if show_fields:
+        cols.append("Hit fields")
+    cols.append("Summary")
+    header = "| " + " | ".join(cols) + " |"
+    divider = "|" + "|".join(["----------"] * len(cols)) + "|"
 
     lines = ["# API Candidates", "", header, divider]
     unmatched = 0
@@ -129,18 +128,19 @@ def _candidates_markdown(candidates: list[dict]) -> str:
         summary = str(item.get("doc_summary") or "").replace("|", "\\|")
         if match_type == "unmatched":
             unmatched += 1
+        cells = [selected, str(method), f"`{path}`", str(match_type), source_text]
         if show_confidence:
             conf = item.get("confidence", "")
-            conf_text = "" if conf == "" or conf is None else str(conf)
-            lines.append(
-                f"| {selected} | {method} | `{path}` | {match_type} | "
-                f"{source_text} | {conf_text} | {summary} |"
-            )
-        else:
-            lines.append(
-                f"| {selected} | {method} | `{path}` | {match_type} | "
-                f"{source_text} | {summary} |"
-            )
+            cells.append("" if conf == "" or conf is None else str(conf))
+        if show_fields:
+            hits = item.get("hit_fields") or []
+            score = item.get("score")
+            hit_text = ", ".join(str(h) for h in hits)
+            if score is not None and hit_text:
+                hit_text = f"{hit_text} (score={score})"
+            cells.append(hit_text)
+        cells.append(summary)
+        lines.append("| " + " | ".join(cells) + " |")
     lines.extend(["", f"Total: {len(candidates)} · Unmatched: {unmatched}", ""])
     return "\n".join(lines)
 

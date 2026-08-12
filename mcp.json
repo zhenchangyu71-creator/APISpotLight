@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "api-spotlight": {
+      "command": "python",
+      "args": ["-m", "api_spotlight.server"],
+      "env": {
+        "TORNA_TOKEN": "${TORNA_TOKEN}",
+        "TORNA_TIMEOUT_SECONDS": "${TORNA_TIMEOUT_SECONDS}",
+        "TORNA_DOC_CONCURRENCY": "${TORNA_DOC_CONCURRENCY}",
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}",
+        "OPENAI_BASE_URL": "${OPENAI_BASE_URL}",
+        "VISION_MODEL": "${VISION_MODEL}"
+      }
+    }
+  }
+}

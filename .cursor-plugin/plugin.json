@@ -1,0 +1,21 @@
+{
+  "name": "api-spotlight",
+  "version": "0.1.0",
+  "description": "按页面 mock/截图从完整 OpenAPI 或 Torna 项目文档筛选接口：候选确认后再导出精简文档。",
+  "author": {
+    "name": "APISpotLight"
+  },
+  "keywords": [
+    "openapi",
+    "torna",
+    "api",
+    "mcp",
+    "page-apis",
+    "mock",
+    "screenshot",
+    "接口筛选",
+    "API文档"
+  ],
+  "commands": "./commands/",
+  "mcpServers": "./mcp.json"
+}

@@ -51,9 +51,9 @@ def test_stage1_mock_generates_matched_and_unmatched_candidates(
     assert len(candidates) == 3
 
     by_key = {(c["method"], c["path"]): c for c in candidates}
-    assert by_key[("GET", "/users")]["match_type"] == "exact"
+    assert by_key[("GET", "/users")]["match_type"] in {"exact", "path+field"}
     assert by_key[("GET", "/users")]["selected"] is True
-    assert by_key[("GET", "/users/{id}")]["match_type"] == "template"
+    assert by_key[("GET", "/users/{id}")]["match_type"] in {"template", "path+field"}
     assert by_key[("GET", "/users/{id}")]["selected"] is True
     assert by_key[("POST", "/users")]["match_type"] == "unmatched"
     assert by_key[("POST", "/users")]["selected"] is False
@@ -61,6 +61,81 @@ def test_stage1_mock_generates_matched_and_unmatched_candidates(
     md = Path(result["markdown_path"]).read_text(encoding="utf-8")
     assert "GET" in md and "/users" in md
     assert "unmatched" in md.lower() or "Unmatched" in md
+
+
+def test_stage1_accepts_local_api_doc_source_alias(
+    tmp_path: Path, clear_vision_env: None
+) -> None:
+    result = find_page_apis(
+        mock_paths=[str(MOCK_JSON)],
+        screenshot_paths=[],
+        api_doc_source=str(OPENAPI_YAML),
+        output_dir=str(tmp_path / "out"),
+        vision_enabled=False,
+    )
+
+    assert result["matched"] == 2
+    assert "openapi_cache_path" not in result
+
+
+def test_stage1_rejects_different_api_doc_aliases(
+    tmp_path: Path, clear_vision_env: None
+) -> None:
+    with pytest.raises(ValueError, match="api_doc_path|api_doc_source|different"):
+        find_page_apis(
+            mock_paths=[str(MOCK_JSON)],
+            screenshot_paths=[],
+            api_doc_path=str(OPENAPI_YAML),
+            api_doc_source=str(tmp_path / "other.json"),
+            output_dir=str(tmp_path / "out"),
+            vision_enabled=False,
+        )
+
+
+def test_stage1_torna_source_writes_cache_and_merges_warnings(
+    tmp_path: Path,
+    clear_vision_env: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import api_spotlight.workflows as workflows_mod
+
+    torna_document = yaml.safe_load(OPENAPI_YAML.read_text(encoding="utf-8"))
+    calls: list[str] = []
+
+    def fake_load(source: str):
+        calls.append(source)
+        return torna_document, {"warnings": ["one Torna detail failed"]}
+
+    monkeypatch.setattr(workflows_mod, "load_openapi_from_torna", fake_load)
+    out = tmp_path / "out"
+    source = "http://torna.example/#/project/doc/project-1"
+
+    result = find_page_apis(
+        mock_paths=[str(MOCK_JSON)],
+        screenshot_paths=[],
+        api_doc_source=source,
+        output_dir=str(out),
+        vision_enabled=False,
+    )
+
+    cache = out / "full-openapi.from-torna.json"
+    assert calls == [source]
+    assert result["openapi_cache_path"] == str(cache)
+    assert json.loads(cache.read_text(encoding="utf-8")) == torna_document
+    assert "one Torna detail failed" in result["warnings"]
+
+
+def test_stage1_rejects_single_torna_document_source(
+    tmp_path: Path, clear_vision_env: None
+) -> None:
+    with pytest.raises(ValueError, match="项目链接|project"):
+        find_page_apis(
+            mock_paths=[str(MOCK_JSON)],
+            screenshot_paths=[],
+            api_doc_source="http://torna.example/#/view/doc-1",
+            output_dir=str(tmp_path / "out"),
+            vision_enabled=False,
+        )
 
 
 def test_stage1_vision_missing_credentials_degrades_with_warning(
@@ -175,6 +250,79 @@ def test_stage2_exports_selected_only_with_recursive_refs(
     assert set(slim["components"]["schemas"]) == {"User", "Profile", "Address"}
     assert "Unused" not in slim["components"]["schemas"]
     assert "UserUpdate" not in slim["components"]["schemas"]
+
+
+def test_stage2_accepts_stage1_torna_cache_without_refetch(
+    tmp_path: Path,
+    clear_vision_env: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import api_spotlight.workflows as workflows_mod
+
+    torna_document = yaml.safe_load(OPENAPI_YAML.read_text(encoding="utf-8"))
+    monkeypatch.setattr(
+        workflows_mod,
+        "load_openapi_from_torna",
+        lambda source: (torna_document, {"warnings": []}),
+    )
+    stage1 = find_page_apis(
+        mock_paths=[str(MOCK_JSON)],
+        screenshot_paths=[],
+        api_doc_source="https://torna.example/#/project/doc/project-1",
+        output_dir=str(tmp_path / "stage1"),
+        vision_enabled=False,
+    )
+    candidates_path = Path(stage1["candidates_path"])
+    candidates = json.loads(candidates_path.read_text(encoding="utf-8"))
+    for item in candidates:
+        item["selected"] = item["method"] == "GET" and item["path"] == "/users"
+    candidates_path.write_text(json.dumps(candidates), encoding="utf-8")
+
+    monkeypatch.setattr(
+        workflows_mod,
+        "load_openapi_from_torna",
+        lambda source: (_ for _ in ()).throw(AssertionError("unexpected Torna refetch")),
+    )
+    out = tmp_path / "slim.json"
+    result = export_confirmed_apis(
+        api_doc_source=stage1["openapi_cache_path"],
+        candidates_path=str(candidates_path),
+        output_path=str(out),
+        output_format="json",
+    )
+
+    assert result["exported"] == 1
+    assert set(json.loads(out.read_text(encoding="utf-8"))["paths"]) == {"/users"}
+
+
+def test_stage2_torna_source_merges_loader_warnings(
+    tmp_path: Path,
+    clear_vision_env: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import api_spotlight.workflows as workflows_mod
+
+    torna_document = yaml.safe_load(OPENAPI_YAML.read_text(encoding="utf-8"))
+    monkeypatch.setattr(
+        workflows_mod,
+        "load_openapi_from_torna",
+        lambda source: (torna_document, {"warnings": ["partial Torna failure"]}),
+    )
+    result = export_confirmed_apis(
+        api_doc_source="https://torna.example/#/project/doc/project-1",
+        confirmed_apis=[
+            {
+                "method": "GET",
+                "path": "/users",
+                "selected": True,
+            }
+        ],
+        output_path=str(tmp_path / "slim.json"),
+        output_format="json",
+    )
+
+    assert result["exported"] == 1
+    assert "partial Torna failure" in result["warnings"]
 
 
 def test_stage2_exports_yaml_and_markdown(

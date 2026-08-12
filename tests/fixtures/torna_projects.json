@@ -1,0 +1,29 @@
+{
+  "code": 0,
+  "data": [
+    {
+      "id": "space-1",
+      "name": "ERP Space",
+      "projects": [
+        {
+          "id": "project-erp",
+          "name": "ERP API"
+        },
+        {
+          "id": "project-stock",
+          "name": "Stock API"
+        }
+      ]
+    },
+    {
+      "id": "space-2",
+      "name": "CRM Space",
+      "projects": [
+        {
+          "id": "project-crm",
+          "name": "CRM API"
+        }
+      ]
+    }
+  ]
+}

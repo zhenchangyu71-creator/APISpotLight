@@ -1,0 +1,10 @@
+{
+  "code": 0,
+  "data": {
+    "id": "doc-list",
+    "name": "List orders",
+    "description": "Returns all orders.",
+    "httpMethod": "GET",
+    "url": "https://erp.example.test/api/orders?status=open"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "code": 0,
+  "data": [
+    {
+      "id": "folder-orders",
+      "name": "Orders",
+      "children": [
+        {
+          "docId": "doc-list",
+          "name": "List orders",
+          "httpMethod": "GET",
+          "url": "/api/orders"
+        },
+        {
+          "id": "doc-create",
+          "name": "Create order",
+          "httpMethod": "POST",
+          "url": "/api/orders"
+        }
+      ]
+    },
+    {
+      "id": "folder-empty",
+      "name": "Empty folder",
+      "children": []
+    }
+  ]
+}

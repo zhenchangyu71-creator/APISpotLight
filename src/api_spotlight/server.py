@@ -4,10 +4,17 @@ from __future__ import annotations
 
 from fastmcp import FastMCP
 
+from api_spotlight.torna import test_torna_connection as _test_torna_connection
 from api_spotlight.workflows import (
     export_confirmed_apis as _export_confirmed_apis,
     find_page_apis as _find_page_apis,
 )
+
+
+def _test_torna_connection_tool(doc_url: str) -> dict:
+    """Expose only MCP-safe public arguments for the Torna connection check."""
+    return _test_torna_connection(doc_url)
+
 
 mcp = FastMCP(
     "APISpotLight",
@@ -21,7 +28,7 @@ mcp.tool(
     name="find_page_apis",
     description=(
         "Match mock paths and optional screenshot evidence against a complete "
-        "local OpenAPI document, then write candidates.json and candidates.md."
+        "local or Torna OpenAPI document, then write review candidates."
     ),
 )(_find_page_apis)
 
@@ -32,6 +39,14 @@ mcp.tool(
         "export selected APIs with recursively referenced OpenAPI components."
     ),
 )(_export_confirmed_apis)
+
+mcp.tool(
+    name="test_torna_connection",
+    description=(
+        "Validate a Torna project URL and TORNA_TOKEN, then report project and "
+        "API summary information without returning the token."
+    ),
+)(_test_torna_connection_tool)
 
 
 def main() -> None:

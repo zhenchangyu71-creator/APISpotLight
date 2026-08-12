@@ -48,6 +48,96 @@ def parse_mock_paths(paths: list[str]) -> tuple[list[dict], list[str]]:
     return requirements, warnings
 
 
+def extract_mock_field_evidence(
+    paths: list[str],
+) -> tuple[list[dict], list[str]]:
+    """Extract field bags from mock JSON/JS bodies for hybrid field lookup.
+
+    Each evidence item:
+    ``{fields, method?, path?, source_file?}``
+    """
+    from api_spotlight.field_lookup import extract_fields_from_obj
+
+    evidence: list[dict] = []
+    warnings: list[str] = []
+
+    for raw in paths:
+        path = Path(raw).expanduser()
+        files: list[Path] = []
+        if path.is_dir():
+            files = [
+                f
+                for f in sorted(path.rglob("*"))
+                if f.is_file() and f.suffix.lower() in _SUPPORTED_EXTENSIONS
+            ]
+        elif path.is_file():
+            if path.suffix.lower() not in _SUPPORTED_EXTENSIONS:
+                warnings.append(
+                    f"Unsupported mock file extension (skipped): {path}"
+                )
+                continue
+            files = [path]
+        else:
+            warnings.append(f"Mock path not found: {path}")
+            continue
+
+        for file_path in files:
+            try:
+                text = file_path.read_text(encoding="utf-8")
+            except UnicodeError:
+                warnings.append(
+                    f"Failed to read mock file {file_path}: not valid UTF-8"
+                )
+                continue
+            except OSError as exc:
+                warnings.append(f"Failed to read mock file {file_path}: {exc}")
+                continue
+
+            if file_path.suffix.lower() != ".json":
+                # JS: still collect METHOD keys; bodies are harder — skip field bags
+                continue
+
+            try:
+                data = json.loads(text)
+            except json.JSONDecodeError as exc:
+                warnings.append(f"Failed to parse mock JSON {file_path}: {exc}")
+                continue
+            if not isinstance(data, dict):
+                warnings.append(f"Mock JSON root must be an object: {file_path}")
+                continue
+
+            saw_method_key = False
+            for raw_key, value in data.items():
+                parsed = _parse_method_path_key(str(raw_key))
+                if parsed is None:
+                    continue
+                saw_method_key = True
+                method, api_path = parsed
+                fields = extract_fields_from_obj(value)
+                if not fields:
+                    continue
+                evidence.append(
+                    {
+                        "method": method,
+                        "path": api_path,
+                        "fields": fields,
+                        "source_file": str(file_path),
+                    }
+                )
+
+            if not saw_method_key:
+                fields = extract_fields_from_obj(data)
+                if fields:
+                    evidence.append(
+                        {
+                            "fields": fields,
+                            "source_file": str(file_path),
+                        }
+                    )
+
+    return evidence, warnings
+
+
 def merge_requirements(*groups: list[dict]) -> list[dict]:
     """Deduplicate by method+path; merge ``source`` as an ordered unique list.
 
