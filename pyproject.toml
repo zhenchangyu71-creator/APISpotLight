@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "api-spotlight"
+version = "0.1.0"
+description = "Find page-relevant APIs from mocks/screenshots and export confirmed OpenAPI subsets."
+requires-python = ">=3.11"
+dependencies = [
+    "fastmcp",
+    "httpx",
+    "PyYAML",
+]
+
+[project.scripts]
+api-spotlight = "api_spotlight.server:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
